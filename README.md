@@ -1,11 +1,15 @@
-    # task-api
+# task-api
 
-    small api am building to learn FastAPI.
+Small API I am building to learn FastAPI — built in Accra, Ghana 🇬🇭
 
-    currently just basic crud with in-memory list. planning to add database and auth next.
+Currently complete CRUD with SQLite:
+- POST /tasks - Create a task
+- GET /tasks - List all tasks
+- GET /tasks/{id} - Get one task
+- PUT /tasks/{id} - Update a task
+- DELETE /tasks/{id} - Delete a task
 
-    how to run:
-    pip install fastapi uvicorn
-    uvicorn main:app --reload
-
-    built in Accra, Ghana.
+## How to run
+```bash
+pip install -r requirements.txt
+uvicorn main:app --reload
