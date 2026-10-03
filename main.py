@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-import sqlite3
+from typing import List, Optional
+import os
 
-app = FastAPI()
+app = FastAPI(title="TaskFlow API", version="1.0")
 
-# THIS FIXES THE CONNECTION
+# Allow frontend to talk to backend (VERY IMPORTANT for Vercel)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,41 +17,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# DB setup
-conn = sqlite3.connect("tasks.db", check_same_thread=False)
-conn.execute("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, title TEXT, description TEXT, completed BOOLEAN DEFAULT 0)")
-
-class TaskCreate(BaseModel):
+# Task model
+class Task(BaseModel):
+    id: Optional[int] = None
     title: str
-    description: str = ""
+    description: Optional[str] = ""
+    completed: bool = False
 
-class TaskUpdate(BaseModel):
-    title: str = None
-    completed: bool = None
+# In-memory database
+tasks: List[Task] = []
+task_id_counter = 1
 
-@app.get("/tasks")
+@app.get("/api")
+def root():
+    return {"message": "TaskFlow API is running! Go to /docs for API docs"}
+
+@app.get("/api/tasks", response_model=List[Task])
 def get_tasks():
-    cur = conn.execute("SELECT id, title, description, completed FROM tasks")
-    rows = cur.fetchall()
-    return [{"id": r[0], "title": r[1], "description": r[2], "completed": bool(r[3])} for r in rows]
+    return tasks
 
-@app.post("/tasks")
-def create_task(task: TaskCreate):
-    cur = conn.execute("INSERT INTO tasks (title, description, completed) VALUES (?,?, 0)", (task.title, task.description))
-    conn.commit()
-    return {"id": cur.lastrowid, "title": task.title, "description": task.description, "completed": False}
+@app.post("/api/tasks", response_model=Task)
+def create_task(task: Task):
+    global task_id_counter
+    task.id = task_id_counter
+    task_id_counter += 1
+    tasks.append(task)
+    return task
 
-@app.put("/tasks/{task_id}")
-def update_task(task_id: int, task: TaskUpdate):
-    if task.title is not None:
-        conn.execute("UPDATE tasks SET title=? WHERE id=?", (task.title, task_id))
-    if task.completed is not None:
-        conn.execute("UPDATE tasks SET completed=? WHERE id=?", (int(task.completed), task_id))
-    conn.commit()
-    return {"status": "updated"}
+@app.put("/api/tasks/{task_id}", response_model=Task)
+def update_task(task_id: int, updated_task: Task):
+    for i, t in enumerate(tasks):
+        if t.id == task_id:
+            updated_task.id = task_id
+            tasks[i] = updated_task
+            return updated_task
+    return {"detail": "Task not found"}
 
-@app.delete("/tasks/{task_id}")
+@app.delete("/api/tasks/{task_id}")
 def delete_task(task_id: int):
-    conn.execute("DELETE FROM tasks WHERE id=?", (task_id,))
-    conn.commit()
-    return {"status": "deleted"}
+    global tasks
+    tasks = [t for t in tasks if t.id!= task_id]
+    return {"message": "Task deleted"}
+
+# --- SERVE FRONTEND (This fixes your "Not Found" error) ---
+if os.path.exists("index.html"):
+    @app.get("/")
+    async def serve_frontend():
+        return FileResponse("index.html")
+    
