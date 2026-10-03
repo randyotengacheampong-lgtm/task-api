@@ -1,5 +1,4 @@
 # task-api
-
 Small API I am building to learn FastAPI — built in Accra, Ghana 🇬🇭
 
 Currently complete CRUD with SQLite:

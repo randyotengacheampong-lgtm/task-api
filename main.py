@@ -1,59 +1,54 @@
-from fastapi import FastAPI, HTTPException
-from database import get_db_connection, init_db
-from models import TaskCreate, TaskUpdate, Task
-from typing import List
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import sqlite3
 
 app = FastAPI()
-init_db()
 
-@app.post("/tasks", response_model=Task)
-def create_task(task: TaskCreate):
-    if len(task.title.strip()) < 3:
-        raise HTTPException(status_code=400, detail="Title must be at least 3 characters")
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO tasks (title, description, completed) VALUES (?,?,?)",(task.title, task.description, False))
-    conn.commit()
-    task_id = cursor.lastrowid
-    conn.close()
-    return {"id": task_id, "title": task.title, "description": task.description, "completed": False}
+# THIS FIXES THE CONNECTION
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/tasks", response_model=List[Task])
+# DB setup
+conn = sqlite3.connect("tasks.db", check_same_thread=False)
+conn.execute("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, title TEXT, description TEXT, completed BOOLEAN DEFAULT 0)")
+
+class TaskCreate(BaseModel):
+    title: str
+    description: str = ""
+
+class TaskUpdate(BaseModel):
+    title: str = None
+    completed: bool = None
+
+@app.get("/tasks")
 def get_tasks():
-    conn = get_db_connection()
-    tasks = conn.execute("SELECT * FROM tasks").fetchall()
-    conn.close()
-    return [dict(row) for row in tasks]
+    cur = conn.execute("SELECT id, title, description, completed FROM tasks")
+    rows = cur.fetchall()
+    return [{"id": r[0], "title": r[1], "description": r[2], "completed": bool(r[3])} for r in rows]
 
-@app.get("/tasks/{task_id}", response_model=Task)
-def get_task(task_id: int):
-    conn = get_db_connection()
-    task = conn.execute("SELECT * FROM tasks WHERE id =?", (task_id,)).fetchone()
-    conn.close()
-    if task is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return dict(task)
-@app.put("/tasks/{task_id}", response_model=Task)
-def update_task(task_id: int, task: TaskCreate):
-    conn = get_db_connection()
-    existing = conn.execute("SELECT * FROM tasks WHERE id =?", (task_id,)).fetchone()
-    if existing is None:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Task not found")
-    conn.execute("UPDATE tasks SET title=?, description=?, completed=? WHERE id=?", (task.title, task.description, False, task_id))
+@app.post("/tasks")
+def create_task(task: TaskCreate):
+    cur = conn.execute("INSERT INTO tasks (title, description, completed) VALUES (?,?, 0)", (task.title, task.description))
     conn.commit()
-    updated = conn.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-    conn.close()
-    return dict(updated)
+    return {"id": cur.lastrowid, "title": task.title, "description": task.description, "completed": False}
+
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, task: TaskUpdate):
+    if task.title is not None:
+        conn.execute("UPDATE tasks SET title=? WHERE id=?", (task.title, task_id))
+    if task.completed is not None:
+        conn.execute("UPDATE tasks SET completed=? WHERE id=?", (int(task.completed), task_id))
+    conn.commit()
+    return {"status": "updated"}
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
-    conn = get_db_connection()
-    existing = conn.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-    if existing is None:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Task not found")
     conn.execute("DELETE FROM tasks WHERE id=?", (task_id,))
     conn.commit()
-    conn.close()
-    return {"message": "Task deleted"}
+    return {"status": "deleted"}
