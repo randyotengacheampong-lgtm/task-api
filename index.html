@@ -2,63 +2,64 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>TaskFlow - Kofi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskFlow by Kofi</title>
 <style>
-*{box-sizing:border-box}
-body{font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px;background:#0e0e10;color:#e5e5e5}
-h1{color:#fff}
-.card{background:#1a1a1e;padding:20px;border-radius:12px;border:1px solid #2a2a2e}
-input{width:68%;padding:12px;border-radius:8px;border:1px solid #333;background:#0e0e10;color:#fff}
-.btn{padding:12px 18px;border-radius:8px;border:none;cursor:pointer;background:#5b5bff;color:#fff;font-weight:600}
-.task{background:#242428;padding:14px;margin:10px 0;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
-.task.done span{text-decoration:line-through;opacity:.5}
-.actions button{margin-left:6px;padding:6px 10px;border-radius:6px;border:none;cursor:pointer}
-.del{background:#ff4d4d;color:#fff}
-.edit{background:#2a2a2e;color:#fff}
+body{max-width:600px;margin:40px auto;padding:20px;background:#0e0e10;color:#fff;font-family:sans-serif}
+.card{padding:20px;border-radius:12px;border:1px solid #2a2a2e;background:#1a1a1e}
+input{width:70%;padding:12px;border-radius:8px;border:1px solid #333;background:#0e0e10;color:#fff}
+button{padding:12px 18px;border-radius:8px;border:none;cursor:pointer;background:#5b5bff;color:#fff;margin-left:8px}
+.task{padding:14px;margin:10px 0;border-radius:10px;display:flex;justify-content:space-between;background:#252529}
+.done{text-decoration:line-through;opacity:.5}
 </style>
 </head>
 <body>
 <h1>TaskFlow ⚡</h1>
-<p style="opacity:.6">FastAPI + Vanilla JS — by Kofi</p>
+<p>FastAPI + Vanilla JS — by Kofi</p>
 <div class="card">
-<input id="title" placeholder="What needs to be done?" />
-<button class="btn" onclick="addTask()">Add Task</button>
-<div id="list" style="margin-top:20px"></div>
+<input id="taskInput" placeholder="What needs to be done?" />
+<button onclick="addTask()">Add Task</button>
+<div id="taskList" style="margin-top:20px"></div>
 </div>
 <script>
-const API="http://127.0.0.1:8000";
+const API_URL = window.location.origin + "/api/tasks";
 async function loadTasks(){
-  const r=await fetch(`${API}/tasks`);
-  const tasks=await r.json();
-  document.getElementById("list").innerHTML=tasks.map(t=>`
-    <div class="task ${t.completed?'done':''}">
-      <span onclick="toggle(${t.id},${t.completed})" style="cursor:pointer">${t.completed?'✅':'⬜'} ${t.title}</span>
-      <div class="actions">
-        <button class="edit" onclick="editTask(${t.id},'${t.title}')">Edit</button>
-        <button class="del" onclick="deleteTask(${t.id})">Delete</button>
-      </div>
-    </div>`).join("") || "<p style='opacity:.5'>No tasks yet</p>";
+  const res = await fetch(API_URL);
+  const tasks = await res.json();
+  const list = document.getElementById("taskList");
+  list.innerHTML = "";
+  tasks.forEach(t=>{
+    const div = document.createElement("div");
+    div.className = "task" + (t.completed ? " done" : "");
+    div.innerHTML = `<span onclick="toggleTask(${t.id}, ${t.completed})">${t.title}</span> <button onclick="deleteTask(${t.id})">X</button>`;
+    list.appendChild(div);
+  });
 }
 async function addTask(){
-  const title=document.getElementById("title").value;
-  if(!title) return;
-  await fetch(`${API}/tasks`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,description:""})});
-  document.getElementById("title").value="";
+  const input = document.getElementById("taskInput");
+  if(!input.value) return;
+  await fetch(API_URL, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({title:input.value, description:"", completed:false})
+  });
+  input.value = "";
   loadTasks();
 }
 async function deleteTask(id){
-  await fetch(`${API}/tasks/${id}`,{method:"DELETE"});
+  await fetch(API_URL + "/" + id, {method:"DELETE"});
   loadTasks();
 }
-async function toggle(id,completed){
-  await fetch(`${API}/tasks/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({completed:!completed})});
-  loadTasks();
-}
-async function editTask(id,oldTitle){
-  const newTitle=prompt("Edit task:",oldTitle);
-  if(!newTitle) return;
-  await fetch(`${API}/tasks/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:newTitle})});
+async function toggleTask(id, completed){
+  const tasksRes = await fetch(API_URL);
+  const tasks = await tasksRes.json();
+  const task = tasks.find(x=>x.id===id);
+  if(!task) return;
+  await fetch(API_URL + "/" + id, {
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({...task, completed:!completed})
+  });
   loadTasks();
 }
 loadTasks();
