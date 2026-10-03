@@ -16,12 +16,15 @@ Just went LIVE full-stack! 🚀
 - Connected frontend to live API (`/api/tasks`)
 - Full CRUD now works LIVE on the internet!
 
-## 📚 API - Currently complete CRUD with SQLite
-- POST /api/tasks - Create a task
-- GET /api/tasks - List all tasks
-- GET /tasks/{id} - Get one task
-- PUT /api/tasks/{id} - Update a task
-- DELETE /api/tasks/{id} - Delete a task
+## 📚 API Endpoints (from live docs)
+As shown in Swagger at `/docs`:
+
+- `GET /api` - Root
+- `GET /api/tasks` - Get Tasks (list all)
+- `POST /api/tasks` - Create Task
+- `PUT /api/tasks/{task_id}` - Update Task
+- `DELETE /api/tasks/{task_id}` - Delete Task
+- `GET /` - Serve Frontend (TaskFlow UI)
 
 ## 🛠️ Stack
 Python, FastAPI, Uvicorn, SQLite, Vanilla JS, Vercel, Render
@@ -30,3 +33,7 @@ Python, FastAPI, Uvicorn, SQLite, Vanilla JS, Vercel, Render
 ```bash
 pip install -r requirements.txt
 uvicorn main:app --reload
+## 👨‍💻 Author
+**Randy Oteng Acheampong (Kofi)** — Software Developer, Accra, Ghana 🇬🇭
+- GitHub: [@randyotengacheampong-lgtm](https://github.com/randyotengacheampong-lgtm)
+- Building with FastAPI & JavaScript
