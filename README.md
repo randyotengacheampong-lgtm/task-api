@@ -14,6 +14,6 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 ## Links
-🚀 Live: https://task-api-ze8n.onrender.com
-📚 Docs: https://task-api-ze8n.onrender.com/docs
-💻 Frontend: index.html — TaskFlow UI (open index.html to use it)
+- 🚀 Live: https://task-api-ze8n.onrender.com
+- 📚 Docs: https://task-api-ze8n.onrender.com/docs
+- 💻 Frontend: index.html - TaskFlow UI
