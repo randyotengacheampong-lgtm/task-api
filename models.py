@@ -15,3 +15,17 @@ class Task(BaseModel):
     title: str
     description: Optional[str] = None
     completed: bool = False
+    owner: str = ""
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class User(BaseModel):
+    id: int
+    username: str
+    hashed_password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

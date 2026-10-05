@@ -1,14 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import List, Optional
-import os
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
 
-app = FastAPI(title="TaskFlow API", version="1.0")
+app = FastAPI()
 
-# Allow frontend to talk to backend (VERY IMPORTANT for Vercel)
+# CORS for frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,51 +16,79 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Task model
-class Task(BaseModel):
-    id: Optional[int] = None
-    title: str
-    description: Optional[str] = ""
-    completed: bool = False
+SECRET_KEY = "secret"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# In-memory database
-tasks: List[Task] = []
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+users_db = {}
+tasks_db = {}
 task_id_counter = 1
 
-@app.get("/api")
-def root():
-    return {"message": "TaskFlow API is running! Go to /docs for API docs"}
+def verify_password(plain, hashed):
+    return pwd_context.verify(plain, hashed)
 
-@app.get("/api/tasks", response_model=List[Task])
-def get_tasks():
-    return tasks
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
-@app.post("/api/tasks", response_model=Task)
-def create_task(task: Task):
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@app.post("/register")
+def register(data: dict):
+    username = data.get("username")
+    password = data.get("password")
+    if username in users_db:
+        raise HTTPException(status_code=400, detail="User already exists")
+    users_db[username] = get_password_hash(password)
+    return {"message": "User created"}
+
+@app.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    username = form_data.username
+    password = form_data.password
+    hashed = users_db.get(username)
+    if not hashed:
+        raise HTTPException(status_code=401, detail="User not found")
+    if not verify_password(password, hashed):
+        raise HTTPException(status_code=401, detail="Wrong password")
+    token = create_access_token({"sub": username})
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.get("/tasks")
+def get_tasks(current_user: str = Depends(get_current_user)):
+    return {"user": current_user, "tasks": tasks_db.get(current_user, [])}
+
+@app.post("/tasks")
+def create_task(data: dict, current_user: str = Depends(get_current_user)):
     global task_id_counter
-    task.id = task_id_counter
+    task = {"id": task_id_counter, "title": data.get("title"), "completed": False}
     task_id_counter += 1
-    tasks.append(task)
+    if current_user not in tasks_db:
+        tasks_db[current_user] = []
+    tasks_db[current_user].append(task)
     return task
 
-@app.put("/api/tasks/{task_id}", response_model=Task)
-def update_task(task_id: int, updated_task: Task):
-    for i, t in enumerate(tasks):
-        if t.id == task_id:
-            updated_task.id = task_id
-            tasks[i] = updated_task
-            return updated_task
-    return {"detail": "Task not found"}
-
-@app.delete("/api/tasks/{task_id}")
-def delete_task(task_id: int):
-    global tasks
-    tasks = [t for t in tasks if t.id!= task_id]
-    return {"message": "Task deleted"}
-
-# --- SERVE FRONTEND (This fixes your "Not Found" error) ---
-if os.path.exists("index.html"):
-    @app.get("/")
-    async def serve_frontend():
-        return FileResponse("index.html")
-    
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int, current_user: str = Depends(get_current_user)):
+    user_tasks = tasks_db.get(current_user, [])
+    for i, t in enumerate(user_tasks):
+        if t.get("id") == task_id:
+            user_tasks.pop(i)
+            return {"message": "deleted"}
+    raise HTTPException(status_code=404, detail="Task not found")

@@ -1,5 +1,6 @@
 venv/
-__pycache__/
 tasks.db
-.env
-*.pyc
+__pycache__/
+.DS_Store
+node_modules/
+dist/
