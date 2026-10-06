@@ -44,3 +44,11 @@ Randy Oteng Acheampong (Kofi) — Software Developer, Accra, Ghana 🇬🇭
 - GitHub: [@randyotengacheampong-lgtm](https://github.com/randyotengacheampong-lgtm)
 - Stack: FastAPI & JavaScript  
 - Mission: Building real products, not just tutorials
+
+## 📸 Live Preview
+![TaskFlow Login](preview.png)
+
+**Live App:** https://taskflow-frontend-final-nu.vercel.app
+**API:** https://task-api-5y9b.onrender.com
+
+---
