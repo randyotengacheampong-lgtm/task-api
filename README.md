@@ -53,3 +53,4 @@ Randy Oteng Acheampong (Kofi) — Software Developer, Accra, Ghana 🇬🇭
  •  GitHub: @randyotengacheampong-lgtm
  •  Stack: FastAPI & JavaScript
  •  Mission: Building real products, not just tutorials
+ 
