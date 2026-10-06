@@ -28,8 +28,8 @@ Small but powerful Task API built to learn FastAPI — built in Accra, Ghana �
 - `GET /` - Serve Frontend UI
 
 ### 🛠️ Tech Stack
-**Backend:** Python, FastAPI, Uvicorn, SQLite, SQLAlchemy/Pydantic  
-**Frontend:** HTML, CSS, Vanilla JavaScript  
+**Backend:** Python, FastAPI, Uvicorn, SQLite
+**Frontend:** HTML, CSS, Vanilla JavaScript
 **Deployment:** Render (API) + Vercel (Frontend)
 
 ### 💻 Run Locally
@@ -38,11 +38,9 @@ git clone https://github.com/randyotengacheampong-lgtm/task-api.git
 cd task-api
 pip install -r requirements.txt
 uvicorn main:app --reload
-# Open http://127.0.0.1:8000/docs for API docs
-
-👨‍💻 Author
+```
+### 👨‍💻 Author
 Randy Oteng Acheampong (Kofi) — Software Developer, Accra, Ghana 🇬🇭  
- •  GitHub: @randyotengacheampong-lgtm  
- •  Stack: FastAPI & JavaScript  
- •  Mission: Building real products, not just tutorials
- 
+- GitHub: [@randyotengacheampong-lgtm](https://github.com/randyotengacheampong-lgtm)
+- Stack: FastAPI & JavaScript  
+- Mission: Building real products, not just tutorials
