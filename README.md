@@ -49,6 +49,4 @@ Randy Oteng Acheampong (Kofi) — Software Developer, Accra, Ghana 🇬🇭
 ![TaskFlow Login](preview.png)
 
 **Live App:** https://taskflow-frontend-final-nu.vercel.app
-**API:** https://task-api-5y9b.onrender.com
-
 ---
