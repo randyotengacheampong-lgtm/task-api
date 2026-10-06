@@ -4,3 +4,7 @@ __pycache__/
 .DS_Store
 node_modules/
 dist/
+.vercel
+.DS_Store
+__pycache__/
+tasks.db
